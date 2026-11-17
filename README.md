@@ -1,4 +1,4 @@
-# 📚 低資源文學平行語料邊界修復與大模型英中文學翻譯微調 Pipeline
+# 低資源文學平行語料邊界修復與大模型英中文學翻譯微調 Pipeline
 
 > **研究課題**：低資源文學平行語料的邊界修復、翻譯風格之操作化定義與機器腔抑制 —— 以 4B 級 LLM 的英譯中文學翻譯為驗證場域  
 > **核心模型**：`unsloth/Qwen3-4B-Base-unsloth-bnb-4bit` (採用 LoRA / QLoRA 與 Unsloth 記憶體加速技術)  
@@ -7,7 +7,7 @@
 
 ---
 
-## 📖 目錄
+## 目錄
 
 - [1. 專案背景與研究架構](#1-專案背景與研究架構)
 - [2. 檔案目錄結構](#2-檔案目錄結構)
@@ -150,37 +150,37 @@ novel SFT/
   1. 段落順序絕不改變；
   2. 段落 ID 不重複、不遺漏、不消失；
   3. 跨章節邊界嚴格鎖定（Locked boundaries）；
-  4. 已移動過的段落加入鎖定集 $\mathcal{L}$，後續邊界不得再移動，
+  4. 已移動過的段落加入鎖定集 $\mathcal{L}$ ，後續邊界不得再移動，
      避免連鎖震盪並保證單次掃描收斂。
 
 - **段落匹配分數 $\sigma$（$\Phi$ 的基本單元）**：
-  $$\sigma(s,t) = \max(0, \cos(s,t)) \cdot \exp(-\lambda_\ell |r(s,t)|) - \tau_m$$
+  $\sigma(s,t) = \max(0, \cos(s,t)) \cdot \exp(-\lambda_\ell |r(s,t)|) - \tau_m$ 
   整流餘弦（rectified cosine）抑制負相似度的干擾；指數項依長度比 
   $r(s,t)$ 折扣長短懸殊的假性匹配；減去門檻 $\tau_m$ 使弱匹配成為負分，
   讓 DP 寧可選擇缺口（gap）也不勉強對齊。
 
 - **$\Phi$ 函數（單調對齊動態規劃）**：
-  給定候選切分後的段落序列 $S=(s_1,\ldots,s_m)$、$T=(t_1,\ldots,t_n)$，
+  給定候選切分後的段落序列 $S=(s_1,\ldots,s_m)$ 、 $T=(t_1,\ldots,t_n)$ ，
   $\Phi(S,T)$ 為 Needleman–Wunsch 型全域單調對齊分：
-  $$\mathrm{dp}[a][b] = \max\begin{cases}
+  $\mathrm{dp}[a][b] = \max\begin{cases}
     \mathrm{dp}[a-1][b-1] + \sigma(s_a, t_b) & \text{(1–1 匹配)}\\
     \mathrm{dp}[a-1][b] - \gamma & \text{(來源側缺口)}\\
     \mathrm{dp}[a][b-1] - \gamma & \text{(目標側缺口)}
-  \end{cases}$$
-  邊界條件 $\mathrm{dp}[0][0]=0$、$\mathrm{dp}[a][0]=-a\gamma$、
-  $\mathrm{dp}[0][b]=-b\gamma$，回傳 $\Phi=\mathrm{dp}[m][n]$。
+  \end{cases}$
+  邊界條件 $\mathrm{dp}[0][0]=0$ 、$\mathrm{dp}[a][0]=-a\gamma$ 、
+  $\mathrm{dp}[0][b]=-b\gamma$ ，回傳 $\Phi=\mathrm{dp}[m][n]$ 。
   路徑嚴格單調，結構上即保證硬性約束 1；1–many 關係以 gap 近似計分，
-  換取 $O(mn)$ 的可枚舉性。$\Phi$ 越高，代表該切分下兩側內部對齊越一致；
-  每個候選 $(\Delta_s,\Delta_t)$ 需對左右兩個區塊各計算一次 $\Phi$。
+  換取 $O(mn)$ 的可枚舉性。 $\Phi$ 越高，代表該切分下兩側內部對齊越一致；
+  每個候選 $(\Delta_s,\Delta_t)$ 需對左右兩個區塊各計算一次 $\Phi$ 。
 
 - **數學目標函數**：
   在滑動窗口範圍 $(\Delta_s, \Delta_t) \in [-K, K]^2$ 內枚舉轉移候選，
-  計算單調對齊匹配分 $\Phi$、長度懲罰比、以及偏離先驗的懲罰：
-  $$\Psi(\Delta_s, \Delta_t) = \frac{\Phi(S_i', T_i') + \Phi(S_{i+1}', T_{i+1}')}{2}
+  計算單調對齊匹配分 $\Phi$ 、長度懲罰比、以及偏離先驗的懲罰：
+  $\Psi(\Delta_s, \Delta_t) = \frac{\Phi(S_i', T_i') + \Phi(S_{i+1}', T_{i+1}')}{2}
     - \lambda_{\mathrm{mv}}(|\Delta_s| + |\Delta_t|)
-    - \lambda_{\mathrm{sq}}(\Delta_s^2 + \Delta_t^2)$$
+    - \lambda_{\mathrm{sq}}(\Delta_s^2 + \Delta_t^2)$
   取兩側平均使不同邊界間的分數尺度一致，$\delta$ 才能以單一門檻通用；
-  $\lambda_{\mathrm{mv}}$（L1）與 $\lambda_{\mathrm{sq}}$（L2）構成凸的
+  $\lambda_{\mathrm{mv}}$ （L1）與 $\lambda_{\mathrm{sq}}$ （L2）構成凸的
   位移先驗：前者偏好小位移，後者超線性壓制大位移。
 
 - **超參數說明**：
@@ -341,7 +341,6 @@ FastLanguageModel.for_inference(model)
 | **字元/形態級準確** | **chrF++** (`sacrebleu`) | `word_order=2` | 對低資源與形態變化更魯棒的字元級評估 |
 | **神經跨語言語義** | **COMET** | `Unbabel/wmt22-comet-da` | 結合原文與譯文的語意逼近程度（與人評相關性最高） |
 | **語意表示相似度** | **BERTScore** | `lang="zh"` | 透過預訓練模型上下文表徵衡量語義忠實度 |
-| **機器腔 (Translationese)** | 自建統計分析 | 詞長方差、連詞頻率、被動句比重 | 檢驗譯文是否擺脫機器腔，向人類文學譯文聚集 |
 
 ---
 
