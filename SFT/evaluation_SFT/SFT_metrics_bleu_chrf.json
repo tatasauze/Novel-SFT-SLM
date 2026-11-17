@@ -1,0 +1,50 @@
+{
+  "run_id": "20260829-075449",
+  "timestamp": "2026-08-29 08:12:18",
+  "args": {
+    "csv": "/content/clean_data.csv",
+    "adapter_path": "./qwen3-4b-en2zh-sft/final_lora",
+    "base_model": "unsloth/Qwen3-4B-Base-unsloth-bnb-4bit",
+    "split": "test",
+    "max_seq_length": 2048,
+    "max_new_tokens": 128,
+    "max_samples": 200,
+    "seed": 42,
+    "train_ratio": 0.8,
+    "val_ratio": 0.1,
+    "test_ratio": 0.1,
+    "metrics": [
+      "bleu",
+      "chrf"
+    ],
+    "comet_model": "Unbabel/wmt22-comet-da",
+    "comet_batch_size": 2,
+    "bertscore_lang": "zh",
+    "bertscore_batch_size": 4,
+    "output_dir": "./evaluation_results",
+    "no_filter_outlier_alignment": false,
+    "no_filter_token_ratio": false
+  },
+  "num_samples": 194,
+  "split": "test",
+  "metrics": {
+    "bleu": {
+      "score": 23.347571151025836,
+      "precisions": [
+        63.35969167386537,
+        34.78963312016156,
+        21.703840120046383,
+        14.605654247597982
+      ],
+      "bp": 0.8075354235279455,
+      "sys_len": 15049,
+      "ref_len": 18266
+    },
+    "chrf_plus_plus": {
+      "score": 18.692187731097352,
+      "precision": 0.0,
+      "recall": 0.0
+    }
+  },
+  "translations_path": "./evaluation_results/translations_test_20260829-075449.jsonl"
+}

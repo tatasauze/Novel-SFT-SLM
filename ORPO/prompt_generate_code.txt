@@ -1,0 +1,463 @@
+你是一位熟悉 Unsloth、TRL、ORPO、PEFT、Hugging Face Transformers、Hugging Face Hub 的機器學習工程師。請幫我撰寫一份完整、可執行的 Python 代碼，用來在先前已經完成 SFT 的英翻中模型基礎上，繼續執行 ORPO 偏好優化。
+
+請先閱讀當前工作目錄下的兩個參考檔案：
+
+1. `train_en2zh_sft.py`
+   - 這是先前使用 LoRA 做 SFT 的程式碼。
+   - 請盡量複用其中的模板、tokenizer 設定、padding 設定、max_seq_length、保存路徑風格。
+   - 特別注意其中英文輸入到中文輸出的 prompt template，ORPO 階段必須與 SFT 階段完全一致。
+
+2. `unsloth_orpo_template.py`
+   - 這是 Unsloth 官方提供的 ORPO 程式碼模板。
+   - 請優先參考它的 Unsloth / TRL / ORPOTrainer / ORPOConfig 用法。
+   - 如果它使用的 API 與你的知識可能略有版本差異，請以「可執行」為最高原則，並加入兼容性處理。
+   - 不要憑空捏造不存在的函式、參數或行為。
+
+任務目標：
+
+使用 2500 筆 JSONL 偏好資料，對先前 SFT 後的英翻中模型做 ORPO，提升模型偏好「人工譯文 chosen」，降低「機器翻譯 reject」的偏好。最終將 ORPO 後的模型或 LoRA adapter 保存到一個新的 Hugging Face repo。
+
+環境與輸入資料：
+
+1. 先前 SFT 模型：
+   - SFT 模型可能是本地路徑，也可能是 Hugging Face repo。
+   - 請使用變數：
+
+     ```python
+     BASE_MODEL_NAME = "unsloth/Qwen3-4B-Base-unsloth-bnb-4bit"
+     SFT_MODEL_PATH = "請填寫你的SFT模型路徑或HuggingFace repo"
+     ```
+
+   - SFT 模型可能是：
+     - PEFT / LoRA adapter
+     - 已合併的 Hugging Face 模型
+   - 程式碼需要能判斷並兼容兩種情況。
+   - 如果 `SFT_MODEL_PATH` 是 LoRA adapter：
+     - 優先載入 base model，再載入 SFT LoRA adapter。
+     - 請讓該 SFT adapter 繼續被訓練，也就是在同一個 LoRA adapter 上繼續執行 ORPO。
+     - 不要隨便重新初始化新的 LoRA，否則最終保存的模型會失去先前 SFT 結果。
+     - 如果因為 Unsloth / PEFT API 限制，必須新增新的 LoRA，請在代碼中明確印出警告，並說明最終保存方式。
+   - 如果 `SFT_MODEL_PATH` 是已合併模型：
+     - 可以直接載入該模型。
+     - 可以選擇在其上加入新的 LoRA 做 ORPO。
+     - 最終保存時要清楚說明 base model 是哪個模型。
+
+2. ORPO 資料：
+   - 資料共 2500 筆。
+   - 格式是 JSONL。
+   - 每筆至少包含：
+
+     ```json
+     {
+       "prompt": "原文英文",
+       "chosen": "人工譯文",
+       "reject": "機器翻譯"
+     }
+     ```
+
+   - 注意：拒絕樣本欄位名稱可能是 `reject`，也可能是 `rejected`。
+   - 程式碼需要同時兼容：
+     - `reject`
+     - `rejected`
+   - 內部處理時請統一改名為 `rejected`。
+   - 資料路徑使用：
+
+     ```python
+     ORPO_DATA_PATH = "請填寫你的orpo資料.jsonl"
+     ```
+
+3. 輸出發佈：
+   - 最終要把 ORPO 結果保存到新的 Hugging Face repo。
+   - 使用：
+
+     ```python
+     HF_REPO_ID = "請填寫你的huggingface帳號/模型名稱"
+     PUSH_TO_HUB = True
+     PRIVATE = False
+     ```
+
+   - 不要在代碼中寫死 Hugging Face token。
+   - 請使用環境變數 `HF_TOKEN` 或使用者已經執行過 `huggingface-cli login` 的登入狀態。
+   - 最終上傳內容至少包含：
+     - 模型權重或 LoRA adapter
+     - tokenizer
+     - `training_config.json`
+     - `README.md`
+   - `README.md` 需要包含：
+     - 基礎模型名稱
+     - 先前 SFT 模型來源
+     - ORPO 資料格式
+     - 使用的模板
+     - 主要訓練參數
+     - 如何載入模型
+     - 如果是 LoRA，請清楚說明載入方式
+
+程式碼硬性要求：
+
+一、先讀取並复用 SFT 代碼中的模板
+
+1. 請嘗試從 `train_en2zh_sft.py` 中找到以下內容並复用：
+   - 英文輸入模板
+   - 中文輸出模板
+   - `tokenizer.eos_token`
+   - `max_seq_length`
+   - `padding_side`
+   - 生成時的停止標記
+
+2. 如果找不到明確模板，請使用以下預設模板：
+
+   ```text
+   ### English
+   {english}
+   ### Chinese
+   {chinese}
+   ```
+
+3. ORPO 的 prompt 必須與 SFT 推理模板一致。
+
+4. 如果 JSONL 中的 `prompt` 欄位只是英文原文，請自動包成：
+
+   ```text
+   ### English
+   {prompt}
+   ### Chinese
+   ```
+
+5. 如果 JSONL 中的 `prompt` 欄位已經包含完整模板，例如已經有 `### Chinese`，則不要重複包裝。
+
+6. `chosen` 和 `rejected` 應該只是中文回答，不應該包含英文原文或模板前綴。
+   - 如果發現 `chosen` 或 `rejected` 中包含 `### English` 或 `### Chinese`，請嘗試移除模板前綴。
+   - 如果無法安全移除，請印出警告並過濾該筆資料。
+
+二、資料前處理
+
+1. 使用 `datasets` 或 `pandas` 讀取 JSONL。
+
+2. 標準化欄位：
+   - 將 `reject` 改名為 `rejected`。
+   - 如果同時有 `reject` 和 `rejected`，優先使用 `rejected`。
+   - 最終保留欄位：
+     - `prompt`
+     - `chosen`
+     - `rejected`
+
+3. 清洗資料：
+   - 刪除缺少 `prompt`、`chosen` 或 `rejected` 的樣本。
+   - 對三個字串都做 `strip()`。
+   - 刪除空字串樣本。
+   - 刪除 `chosen == rejected` 的樣本。
+   - 可選：刪除 `chosen` 或 `rejected` 長度極短的樣本，例如小於 2 個字元。
+   - 印出清洗前與清洗後資料數量。
+
+4. 使用 tokenizer 計算長度：
+   - 對每一筆資料計算：
+     - `prompt` token 數
+     - `chosen` token 數
+     - `rejected` token 數
+     - `prompt + chosen` 總 token 數
+     - `prompt + rejected` 總 token 數
+   - 印出：
+     - min
+     - p50
+     - p90
+     - p95
+     - p99
+     - max
+   - 如果樣本總長度超過 `MAX_SEQ_LENGTH`，請過濾掉該樣本，並印出被過濾的數量。
+   - 不要隨意截斷 `chosen` 或 `rejected` 中文輸出，尤其是不要截斷人工譯文。
+
+5. 去重：
+   - 使用 `prompt` 做去重。
+   - 如果相同 `prompt` 出現多次，只保留第一筆，或保留 `chosen` 較長的一筆。
+   - 印出去重前後數量。
+
+三、資料切分
+
+1. 資料總數約 2500 筆。
+
+2. 建議切分比例：
+
+   ```text
+   train: 70%
+   validation: 15%
+   test: 15%
+   ```
+
+3. 請固定 `seed=42`。
+
+4. 切分時確保：
+   - 同一個 `prompt` 不可以同時出現在 train / validation / test。
+   - validation 和 test 不能洩漏到 train。
+
+5. 印出：
+   - 每個 split 的樣本數。
+   - 每個 split 中 `chosen` 和 `rejected` 的平均 token 數。
+
+6. 如果資料量太小，導致某個 split 為 0，請報錯並提示需要調整比例。
+
+四、模型載入與 ORPO 初始化
+
+1. 使用 Unsloth 載入模型。
+
+2. 基礎設定：
+
+   ```python
+   MAX_SEQ_LENGTH = 1024
+   LOAD_IN_4BIT = True
+   ```
+
+3. 如果 `unsloth_orpo_template.py` 中有官方推薦的模型載入方式，請優先使用。
+
+4. 如果 SFT 模型是 LoRA adapter：
+   - 請載入 base model。
+   - 載入 SFT LoRA adapter。
+   - 設置該 adapter 為可訓練。
+   - 不要重新初始化新的隨機 LoRA，除非必要。
+   - 印出目前可訓練參數數量。
+
+5. 如果 SFT 模型是完整模型：
+   - 請載入完整模型。
+   - 可對其加入新的 LoRA 做 ORPO。
+   - LoRA 參數建議：
+     - `r = 16` 或 `32`
+     - `lora_alpha = 32` 或 `64`
+     - `lora_dropout = 0.05`
+     - `target_modules = ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"]`
+   - 如果 ORPO 只需要微調少量參數，`r=16` 也可以。
+
+6. 啟用 gradient checkpointing：
+   - 如果 Unsloth 支持 `use_gradient_checkpointing="unsloth"`，優先使用。
+   - 否則使用 `True`。
+
+7. 如果 tokenizer 沒有 pad_token，請設置一個合理的 pad_token。
+   - 但生成時要能正確停止。
+   - 不要讓 pad_token 干擾中文輸出。
+
+五、ORPO 訓練
+
+1. 請使用 TRL 的 `ORPOTrainer` 和 `ORPOConfig`。
+
+2. 如果 `unsloth_orpo_template.py` 中有官方 ORPO 寫法，請優先使用其資料格式與參數。
+
+3. 如果官方模板使用 `ORPOTrainer` 接受 `prompt / chosen / rejected` 文本欄位，請使用該格式。
+
+4. 如果需要自行 tokenize，請確保：
+   - prompt 部分不計算 loss。
+   - `chosen` 和 `rejected` 的 response 部分才計算 loss。
+   - labels 中 prompt 對應位置設為 `-100`。
+   - `chosen` 和 `rejected` 結尾要有正確的 `eos_token`。
+   - 不要重複加 `eos_token`。
+
+5. ORPO 訓練參數建議：
+
+   ```python
+   OUTPUT_DIR = "./qwen3-4b-en2zh-orpo"
+   NUM_TRAIN_EPOCHS = 1
+   PER_DEVICE_TRAIN_BATCH_SIZE = 1
+   PER_DEVICE_EVAL_BATCH_SIZE = 1
+   GRADIENT_ACCUMULATION_STEPS = 16
+   LEARNING_RATE = 5e-6
+   WARMUP_RATIO = 0.05
+   LR_SCHEDULER_TYPE = "cosine"
+   OPTIM = "adamw_8bit"
+   WEIGHT_DECAY = 0.01
+   MAX_GRAD_NORM = 1.0
+   LOGGING_STEPS = 5
+   EVAL_STRATEGY = "epoch"
+   SAVE_STRATEGY = "epoch"
+   LOAD_BEST_MODEL_AT_END = True
+   METRIC_FOR_BEST_MODEL = "eval_loss"
+   GREATER_IS_BETTER = False
+   SEED = 42
+   REPORT_TO = "none"
+   BF16 = True if supported else False
+   FP16 = True if BF16 not supported else False
+   ```
+
+6. ORPO 特有參數：
+   - 請檢查 `ORPOConfig` 支持哪些參數。
+   - 可能出現的名稱包括：
+     - `orpo_alpha`
+     - `orpo_lambda`
+     - `lambda`
+     - `beta`
+   - 如果官方模板 `unsloth_orpo_template.py` 有明確寫法，請照官方模板。
+   - 如果沒有明確寫法，請使用一個保守的 ORPO weight，例如 `0.05` 或 `0.1`。
+   - 不要傳入 `ORPOConfig` 不支持的參數，否則會報錯。
+   - 可以通過檢查函式簽名或 `dataclass fields` 的方式做兼容性處理。
+
+7. 如果 `ORPOConfig` 支持：
+   - `max_length = MAX_SEQ_LENGTH`
+   - `max_prompt_length = 512`
+   - `truncation_mode` 如果支持，請設置合理值。
+   - 如果資料都很短，可以不啟用截斷，而是直接過濾過長樣本。
+
+8. 不要在 ORPO 階段使用過多不同模板。
+   - 模板必須固定。
+   - 與 SFT 階段一致。
+
+9. 如果訓練過程中出現 OOM：
+   - 代碼中請註解說明可將：
+     - `PER_DEVICE_TRAIN_BATCH_SIZE` 改為 1
+     - `GRADIENT_ACCUMULATION_STEPS` 增加
+     - `MAX_SEQ_LENGTH` 降低
+
+六、驗證與生成樣本
+
+1. 請在訓練結束後，從 validation 或 test set 取 5 筆樣本進行生成。
+
+2. 生成時使用與訓練一致的模板：
+
+   ```text
+   ### English
+   {english}
+   ### Chinese
+   ```
+
+3. 生成參數：
+
+   ```python
+   do_sample=False
+   max_new_tokens=512
+   temperature=None
+   top_p=None
+   ```
+
+4. 生成結果請印出：
+   - 英文原文
+   - 人工譯文 `chosen`
+   - 機器翻譯 `rejected`
+   - ORPO 模型生成結果
+
+5. 請把生成結果保存成：
+
+   ```text
+   OUTPUT_DIR/generation_samples.jsonl
+   ```
+
+6. 如果可以，請在每個 epoch 結束後生成 1 筆樣本，方便觀察風格變化。
+   - 如果實作困難，至少保證訓練結束後能生成 5 筆樣本。
+
+7. 生成後需要清理輸出：
+   - 移除 `### English`
+   - 移除 `### Chinese`
+   - 移除 tokenizer.eos_token
+   - 移除多餘空白
+
+七、保存模型與上傳 Hugging Face
+
+1. 訓練結束後，請保存模型到本地：
+
+   ```python
+   OUTPUT_DIR/final
+   ```
+
+2. 保存內容至少包含：
+   - 模型或 LoRA adapter
+   - tokenizer
+   - `training_config.json`
+   - `README.md`
+   - `generation_samples.jsonl`
+
+3. `training_config.json` 需要包含：
+   - BASE_MODEL_NAME
+   - SFT_MODEL_PATH
+   - ORPO_DATA_PATH
+   - MAX_SEQ_LENGTH
+   - 資料切分比例
+   - 模板
+   - LEARNING_RATE
+   - NUM_TRAIN_EPOCHS
+   - PER_DEVICE_TRAIN_BATCH_SIZE
+   - GRADIENT_ACCUMULATION_STEPS
+   - ORPO 相關權重參數
+   - seed
+   - 訓練時間，如果可以取得
+
+4. 如果最終保存的是 LoRA adapter：
+   - `README.md` 必須清楚說明：
+     - 基礎模型是 `unsloth/Qwen3-4B-Base-unsloth-bnb-4bit`
+     - 此 adapter 是否已包含 SFT + ORPO 更新
+     - 如何載入 adapter
+     - 如何使用模板進行翻譯
+
+5. 如果最終保存的是完整模型：
+   - `README.md` 必須說明：
+     - 模型是否已合併 SFT 與 ORPO
+     - 是否為 4bit 模型
+     - 如何載入與推理
+
+6. 如果 `PUSH_TO_HUB = True`：
+   - 請使用 `huggingface_hub` 上傳。
+   - 使用 `HF_REPO_ID`。
+   - 使用 `PRIVATE` 決定是否私有。
+   - 如果 repo 不存在，請創建。
+   - 上傳整個 `OUTPUT_DIR/final` 資料夾。
+   - 不要上傳不必要的優化器狀態、暫存檔、快取檔。
+   - 如果上傳成功，印出最終 Hugging Face repo 網址。
+   - 如果上傳失敗，請保留本地模型，並印出清晰錯誤訊息。
+
+7. 不要將 Hugging Face token 寫在代碼中。
+   - 可以使用環境變數 `HF_TOKEN`。
+   - 或使用已登入的 Hugging Face CLI 狀態。
+
+八、程式碼輸出要求
+
+1. 請輸出一份完整 Python 代碼，不要只輸出說明。
+
+2. 代碼可以直接執行。
+
+3. 請在文件頂部加入必要 `import`。
+
+4. 請在代碼最上方用註解寫出建議安裝指令，例如：
+
+   ```python
+   # pip install unsloth torch transformers datasets trl peft bitsandbytes accelerate huggingface_hub scikit-learn pandas numpy
+   ```
+
+5. 請使用繁體中文註解。
+
+6. 請使用清晰變數名稱。
+
+7. 請加入必要的錯誤處理：
+   - 找不到資料檔
+   - 找不到 SFT 模型
+   - 欄位缺失
+   - 模板不一致
+   - `ORPOTrainer` 不存在
+   - Hugging Face 上傳失敗
+
+8. 如果 `ORPOTrainer` 不存在，請不要偷偷改用 DPO。
+   - 請報錯並提示升級 `trl` 或安裝支援 ORPO 的版本。
+
+9. 不要執行與任務無關的綜合評估。
+   - 不需要 MMLU、CEval、GSM8K。
+   - 只需要 ORPO loss、validation loss、生成樣本。
+
+10. 請直接輸出 Python 代碼，不要輸出 Markdown 說明。
+
+九、重要一致性檢查
+
+在生成代碼前，請確保以下事項：
+
+1. ORPO 的 prompt template 必須與 `train_en2zh_sft.py` 中的 SFT 模板一致。
+
+2. `chosen` 是人工譯文，是模型應該偏好的高質量回答。
+
+3. `rejected` 是機器翻譯，是模型應該降低偏好的低質量或風格較差回答。
+
+4. 訓練時不要讓模型學習英文原文作為輸出目標。
+
+5. 不要把 `rejected` 當作訓練目標。
+
+6. 不要讓 test / validation 資料洩漏到 train。
+
+7. 不要在不確定的情況下隨機截斷中文譯文。
+
+8. 最終保存的模型或 adapter 必須可以追溯到：
+   - 原始 base model
+   - SFT 模型
+   - ORPO 資料
+   - ORPO 訓練參數
+
+請現在直接輸出完整可執行的 Python 代碼。

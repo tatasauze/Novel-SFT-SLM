@@ -1,0 +1,38 @@
+{
+  "run_id": "20260829-083259",
+  "timestamp": "2026-08-29 08:51:00",
+  "args": {
+    "csv": "/content/clean_data.csv",
+    "adapter_path": "./qwen3-4b-en2zh-sft/final_lora",
+    "base_model": "unsloth/Qwen3-4B-Base-unsloth-bnb-4bit",
+    "split": "test",
+    "max_seq_length": 2048,
+    "max_new_tokens": 128,
+    "max_samples": 200,
+    "seed": 42,
+    "train_ratio": 0.8,
+    "val_ratio": 0.1,
+    "test_ratio": 0.1,
+    "metrics": [
+      "bertscore"
+    ],
+    "comet_model": "Unbabel/wmt22-comet-da",
+    "comet_batch_size": 2,
+    "bertscore_lang": "zh",
+    "bertscore_batch_size": 4,
+    "output_dir": "./evaluation_results",
+    "no_filter_outlier_alignment": false,
+    "no_filter_token_ratio": false
+  },
+  "num_samples": 194,
+  "split": "test",
+  "metrics": {
+    "bertscore": {
+      "lang": "zh",
+      "f1_mean": 0.8150520920753479,
+      "precision_mean": 0.8217092156410217,
+      "recall_mean": 0.8101652264595032
+    }
+  },
+  "translations_path": "./evaluation_results/translations_test_20260829-083259.jsonl"
+}

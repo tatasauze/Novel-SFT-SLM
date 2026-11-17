@@ -1,0 +1,42 @@
+Mine:
+艾瑪·格林希望那個老頭沒死。人生中總會有這種時刻，你心想一樁事，卻祈禱另一樁事。
+死掉的東西絕對是咖啡店。過去一小時裡，只來了兩個人，兩個人只點了咖啡，
+她老闆不是會讓員工提早下班的人，即使在慢吞吞的禮拜一晚上，他也不會讓員工提早下班，而且他也不會因為提早下班而心情愉快。
+後面的停車場裡，她的車和她老闆的車，還有幾台其他的車。一邊有個垃圾桶，旁邊堆了幾個牛奶箱，空氣裡有股捲心菜的味道。
+照明很暗。但有。夠亮，可以看見前座上那個老頭雙眼緊閉，嘴巴大張，頭向一邊歪，看起來跟他祖父兩年前一樣，他們必須砸開浴室的門，才發現他進去後就沒出來。
+
+Original:
+艾瑪·格林希望老人別死了。有時候，在生命中會碰到這樣的時刻，心裡想著這樣，卻期待實際情況是那樣。
+咖啡店裡倒是一片死寂。過去一小時內才來了兩名顧客，都只點了咖啡，
+即使今天是星期一，即使生意很清淡，咖啡店老闆才不會讓員工提早下班，而且生意不好，他的脾氣也好不到哪裡去。
+後面的停車場裡停了她的車、她老闆的車和另外兩輛車。邊上有個大垃圾箱，旁邊疊了幾個牛奶箱，空氣中泛著高麗菜的味道。
+並沒有什麼遮蔽了光線。有一些啦，但仍亮到能看見老人的身體陷入了前座，嘴巴開開的，眼睛閉著，頭倒向一邊，兩年前爺爺也正是這個模樣，他進了浴室後就沒出來，他們只好破門而入。
+
+GPT5.6 terra:
+艾瑪．格林希望那個老頭還沒死。有些時刻就是這樣來到人生裡：你心裡想著一件事，卻祈求著另一件事。
+眼下唯一可以確定已經死掉的，是這間咖啡館。過去一個鐘頭裡，總共只有兩個客人，而且兩個人除了咖啡之外什麼也沒點；
+她的老闆不是那種就算週一晚上生意冷清，也會讓人提早下班的傢伙，同樣地，他也不是那種會因為生意冷清而有什麼好心情的傢伙。
+後頭的停車場裡停著她的車、她老闆的車，還有另外幾輛。旁邊放著一只垃圾箱，幾個牛奶箱疊靠在旁邊，空氣裡有股高麗菜的味道。
+這裡幾乎沒什麼照明。不過還是有一點。足夠讓她看見那個老頭癱坐在前座，嘴巴張著，眼睛閉著，腦袋歪向一邊——那副模樣，和幾年前她祖父的樣子一模一樣。那時他進了浴室，卻一直沒有出來，他們只好把浴室門給撞開。
+
+Instruction model:
+艾瑪·格林希望那個人還活著。人生中總有些瞬間，你明明心想一件事，卻祈禱另一件事。
+可以肯定的是，咖啡館經關門了。過去一小時里只有兩個顧客，而他們點的都是咖啡。
+老板不是那種在慢條斯理的周一晚上讓人提前離開的人，同樣也不是因為生意冷清就心情大好那種人。
+後院的停車場上停著她的車、老板的車和幾輛其他車。角落里有個垃圾桶，旁邊堆著幾個牛奶箱，空氣中彌漫著卷心菜的味道。
+燈光稀稀落落，但還算夠用。足以看清那個老人癱坐在前排座椅上，張著嘴，眼睛閉著，頭向一邊歪著，看起來和兩年前他們不得不砸開浴室門時爺爺的模樣一模一樣。
+
+Emma Green hopes the old man isn’t dead. It’s one of those moments
+that come along in life where you think one thing and pray for another. The
+one thing dead for sure is the café. There have only been two customers
+over the last hour and neither ordered anything beyond a coffee, and her
+boss isn’t the kind of guy to let anyone go home early even on a slow
+Monday night, and just as equally he isn’t the kind of guy to be in much of
+a good mood because of it. The parking lot out back has her car and her
+boss’s car and a couple of others. There’s a dumpster off to the side and
+some milk crates stacked against it and the air smells of cabbage. There’s
+not much in the way of lighting. But some. Enough to see the old guy
+slumped in the front seat with his mouth open and his eyes closed, his head
+angled to one side, looking exactly the same way her granddad looked a
+couple of years back when they had to bust down the bathroom door after
+he went in and didn’t come out.

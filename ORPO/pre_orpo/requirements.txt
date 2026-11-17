@@ -1,0 +1,11 @@
+vllm
+transformers
+peft
+accelerate
+bitsandbytes
+datasets
+pandas
+pyarrow
+jsonlines
+sentencepiece
+protobuf

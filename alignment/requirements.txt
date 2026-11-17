@@ -1,0 +1,7 @@
+ftfy
+sentence-transformers>=3.3.0
+transformers>=4.51.0
+accelerate
+torchao>=0.16.0
+# 可選，GPU 上啟用 flash_attention_2 用（沒裝也能跑，02_embedding.py 會自動 fallback）：
+# flash-attn --no-build-isolation
